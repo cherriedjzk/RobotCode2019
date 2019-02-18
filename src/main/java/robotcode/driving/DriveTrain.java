@@ -5,22 +5,18 @@ import edu.wpi.first.wpilibj.GenericHID.Hand;
 import edu.wpi.first.wpilibj.PIDController;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import framework.Mechanism;
 import resource.ResourceFunctions;
 import resource.Vector;
 import robotcode.pid.GenericPIDOutput;
 import sensors.RobotAngle;
+import framework.State;
 
-public class DriveTrain {
+public class DriveTrain extends Mechanism<DriveTrain, DriveTrainState>{
 
 	// Output
-	private SwerveDrive mSwerveDrive;
-	private Wheel[] mWheels;
-
-	// Input
-	private RobotAngle mRobotAngle;
-	private XboxController mController;
-	private double mJoystickAngle;
-
+	public SwerveDrive SwerveDrive;
+	
 	// End products
 	private Vector mDesiredRobotVel;
 	private double mDesiredAngularVel;
@@ -39,17 +35,12 @@ public class DriveTrain {
 	private LinearVelocity mPrevLinearVel;
 	private RotationalVelocity mRotationalVel;
 
-	public DriveTrain(Wheel[] pWheels, XboxController pController, RobotAngle pRobotAngle) {
-		mWheels = pWheels;
-		mController = pController;
-		mSwerveDrive = new SwerveDrive(mWheels);
-
-		mRobotAngle = pRobotAngle;
+	public DriveTrain() {
+		SwerveDrive = new SwerveDrive();
 
 		mDesiredRobotVel = new Vector();
 		mDesiredAngularVel = 0;
 
-		mJoystickAngle = 0;
 		mIsFieldRelative = false;
 
 		mLinearVel = LinearVelocity.NONE;
@@ -71,6 +62,10 @@ public class DriveTrain {
 		NORMAL,
 		NUDGE,
 		POV
+	}
+
+	public void TransitionTo(State<DriveTrain, DriveTrainState> state) {
+		
 	}
 
 	private void enactMovement() {

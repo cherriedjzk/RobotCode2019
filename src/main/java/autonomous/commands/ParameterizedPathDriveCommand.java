@@ -54,12 +54,11 @@ public class ParameterizedPathDriveCommand extends BaseAutonomousCommand {
 		SmartDashboard.putNumber("Path angle", -linearV.getAngle() + 90);
 		SmartDashboard.putNumber("Path magnitude", linearV.getMagnitude()*100);
 		
-		DriveTrain mDriveTrain = mRobot.getDriveTrain();
-		mDriveTrain.enactMovement(0, 
+		Robot.Drivetrain.TransitionTo(new DriveTrainState(0, 
 								  -linearV.getAngle() + 90, 
 								  LinearVelocity.NORMAL, 
 								  linearV.getMagnitude()*100, 
-								  RotationalVelocity.NONE);
+								  RotationalVelocity.NONE));
 		
 		return currentTime > mTotalTime;
 	}

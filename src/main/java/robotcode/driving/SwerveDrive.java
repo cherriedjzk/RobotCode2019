@@ -13,6 +13,7 @@ import resource.Vector;
  *
  */
 public class SwerveDrive {
+
 	private Vector[] mOffsets;
 	private Vector[] mOutputs;
 
@@ -23,7 +24,7 @@ public class SwerveDrive {
 	 *            wheels to initialize with; used to compute distances relative to
 	 *            robot center
 	 */
-	public SwerveDrive(final Wheel[] wheels) {
+	public SwerveDrive() {
 		mOffsets = new Vector[4];
 		mOutputs = new Vector[4];
 		double sumDistFromCenter = 0;

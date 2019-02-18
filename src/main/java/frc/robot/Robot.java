@@ -36,7 +36,7 @@ import robotcode.driving.*;
 import robotcode.driving.DriveTrain.LinearVelocity;
 import robotcode.driving.DriveTrain.RotationalVelocity;
 import robotcode.pneumatics.*;
-import robotcode.LocalJoystick;
+import robotcode.CustomJoystick;
 import robotcode.camera.*;
 import robotcode.systems.BallIntakeMotor;
 import robotcode.systems.HatchIntake;
@@ -45,52 +45,25 @@ import robotcode.systems.Leadscrew;
 import sensors.LeadscrewEncoder;
 import sensors.RobotAngle;
 import sensors.TalonAbsoluteEncoder;
+import framework.*;
 
 @SuppressWarnings("deprecation")
-public class Robot extends SampleRobot {
+public class Robot extends SampleRobot implements IMechanism<Robot, RobotState>{
+	
+	public XboxController PrimaryController;
+	public CustomJoystick SecondaryController;
 
-	// **********//
-	// VARIABLES //
-	// **********//
-
-	// controllers
-	private XboxController mController;
-	private LocalJoystick mJoystick;
-
-	// drive train
-	private DriveTrain mDriveTrain;
-	private Wheel[] mWheel = new Wheel[4];
-	private WPI_TalonSRX[] mTurn = new WPI_TalonSRX[4];
-	private WPI_TalonSRX[] mDrive = new WPI_TalonSRX[4];
-	private TalonAbsoluteEncoder[] mEncoder = new TalonAbsoluteEncoder[4];
-
-	// gyro
-	private AHRS mNavX;
-	private RobotAngle mRobotAngle;
-
-	// hatch intake
-	private HatchIntake mHatchIntake;
-	private DoubleSolenoidReal mHatchRotaryPiston;
-	private DoubleSolenoidReal mHatchLinearPiston;
-
-	// ball intake
-	private BallIntakeMotor mBallIntake;
-	private WPI_TalonSRX mBallHolder;
-
-	// leadscrew
-	private WPI_TalonSRX mLeadscrewTalon;
-	private LeadscrewEncoder mLeadscrewEncoder;
-	private Leadscrew mLeadscrew;
-
-	// limelight
-	private Limelight mHatchCamera;
-
-	// intake
-	private Intake mIntake;
-
+	public Mechanism<DriveTrain, DriveTrainState> Drivetrain;
+	public Mechanism<HatchIntake, HatchIntakeState> HatchIntake;
+	public Mechanism<BallIntake, BallIntakeState> BallIntake;
+	public Mechanism<Leadscrew, LeadScrewState> Leadscrew;
+	public Mechanism<Intake, IntakeState> Intake;
+	
+	public RobotAngle RobotAngle;
+	public Limelight HatchCamera;
 	// PDP and compressor
-	private PowerDistributionPanel mPDP;
-	private Compressor mCompressor;
+	public PowerDistributionPanel PDP;
+	public Compressor Compressor;
 
 	// autonomous setup
 	private AutonomousRoutineType mAutonomousRoutine = AutonomousRoutineType.DEFAULT;
@@ -146,17 +119,17 @@ public class Robot extends SampleRobot {
 	}
 
 	public void robotInit() {
-
-		mController = new XboxController(Ports.XBOX);
-		mNavX = new AHRS(Ports.NAVX);
-		mPDP = new PowerDistributionPanel();
+		PrimaryController = new XboxController(Ports.XBOX);
+		NavX = new AHRS(Ports.NAVX);
+		PDP = new PowerDistributionPanel();
+		Compressor = new Compressor(Ports.COMPRESSOR);
 
 		if (RunConstants.RUNNING_DRIVE) {
-			driveInit();
+			Drivetrain = new Mechanism<DriveTrain, DriveTrainState>();
 		}
 
 		if (RunConstants.SECONDARY_JOYSTICK) {
-			mJoystick = new LocalJoystick(Ports.JOYSTICK);
+			SecondaryController = new CustomJoystick(Ports.JOYSTICK);
 		}
 
 		if (RunConstants.RUNNING_HATCH) {
@@ -185,7 +158,6 @@ public class Robot extends SampleRobot {
 			climberInit();
 		}
 
-		mCompressor = new Compressor(Ports.COMPRESSOR);
 	}
 
 	public void autonomous() {
@@ -232,7 +204,7 @@ public class Robot extends SampleRobot {
 		startGame();
 
 		while (isOperatorControl() && isEnabled()) {
-			if (RunConstants.RUNNING_DRIVE) { 
+			if (RUNNING_DRIVE) { 
 				swerveDrive();
 			}
 
@@ -254,13 +226,13 @@ public class Robot extends SampleRobot {
 			// all intake things but not states -- for testing
 			if (RunConstants.RUNNING_HATCH && RunConstants.RUNNING_LEADSCREW && RunConstants.RUNNING_BALL && !RunConstants.RUNNING_EVERYTHING){
 				mIntake.enactMovement();
-				if (mJoystick.getRawButtonReleased(16)){
+				if (SecondaryController.getRawButtonReleased(16)){
 					mHatchIntake.setRotaryOpposite();
 				}
 			}
 
 			if (RunConstants.RUNNING_EVERYTHING) {
-				SmartDashboard.putNumber("z value", mJoystick.getZ());
+				SmartDashboard.putNumber("z value", SecondaryController.getZ());
 				doWork(); 
 			}
 
@@ -272,9 +244,9 @@ public class Robot extends SampleRobot {
 				}
 			}
 
-			mJoystick.updateProfile();
-			SmartDashboard.putNumber("JOYSTICK PROFILE NUMBER", mJoystick.getProfile());
-			SmartDashboard.putString("JOYSTICK PROFILE", (mJoystick.getProfile() == 0) ? "HATCH/LEADSCREW" : "BALL");
+			SecondaryController.updateProfile();
+			SmartDashboard.putNumber("JOYSTICK PROFILE NUMBER", SecondaryController.getProfile());
+			SmartDashboard.putString("JOYSTICK PROFILE", (SecondaryController.getProfile() == 0) ? "HATCH/LEADSCREW" : "BALL");
 			Timer.delay(0.005); // wait for a motor update time
 		}
 	}
@@ -293,8 +265,8 @@ public class Robot extends SampleRobot {
 	// SmartDashboard.putNumber("Leadscrew motor output", mLeadscrewTalon.getMotorOutputPercent());
 	// SmartDashboard.putNumber("Leadscrew error", mLeadscrewTalon.getClosedLoopError());
 
-	private void doWork() {
-		switch (mCurrentState) {
+	public void TransitionTo(State<Robot, RobotState> state) {
+		switch (state.Value) {
 			case INITIAL_HOLDING_HATCH:
 				initialHoldingHatch();
 				break;
@@ -344,12 +316,12 @@ public class Robot extends SampleRobot {
 		//mClimber.up();
 
 		// when the robot wants to score...
-		if (mIntake.holdingHatch() && mJoystick.getRawButtonReleased(JoystickConstants.FinalRobotButtons.SCORE) && mJoystick.getZ() < 0) {
+		if (mIntake.holdingHatch() && SecondaryController.getRawButtonReleased(JoystickConstants.FinalRobotButtons.SCORE) && SecondaryController.getZ() < 0) {
 			mCurrentState = RobotState.HATCH_SCORE;
 		}
 
 		// if we accidentally drop the panel...
-		else if (mIntake.holdingHatch() && mJoystick.getRawButtonReleased(JoystickConstants.FinalRobotButtons.LOAD)){
+		else if (mIntake.holdingHatch() && SecondaryController.getRawButtonReleased(JoystickConstants.FinalRobotButtons.LOAD)){
 			mCurrentState = RobotState.WAITING_TO_LOAD;
 		}
 
@@ -361,7 +333,7 @@ public class Robot extends SampleRobot {
 	 */
 	private void hatchScore() {
 		// if robot or driver says scoring is done...
-		if (mIntake.scorePanel() || mJoystick.getRawButtonReleased(JoystickConstants.FinalRobotButtons.HAS_SCORED)) {
+		if (mIntake.scorePanel() || SecondaryController.getRawButtonReleased(JoystickConstants.FinalRobotButtons.HAS_SCORED)) {
 			mCurrentState = RobotState.WAITING_TO_LOAD;
 		}
 		// dc look this over i thought smth ws wrong then forgot wwhat i thought
@@ -374,13 +346,13 @@ public class Robot extends SampleRobot {
 	 */
 	private void waitingToLoad() {
 		// has_loaded button is pressed and thingy is flipped to ball side
-		if (mIntake.idle() && mJoystick.getRawButtonReleased(JoystickConstants.FinalRobotButtons.HAS_LOADED) && mJoystick.getZ() > 0) {
+		if (mIntake.idle() && SecondaryController.getRawButtonReleased(JoystickConstants.FinalRobotButtons.HAS_LOADED) && SecondaryController.getZ() > 0) {
 			mCurrentState = RobotState.BALL_PRESCORE;
 		}
 
 		// dc implement limit switch here
 		// load button is pressed and thingy is flipped to hatch side 
-		if (mIntake.idle() && mJoystick.getRawButtonReleased(JoystickConstants.FinalRobotButtons.LOAD) && mJoystick.getZ() < 0) {
+		if (mIntake.idle() && SecondaryController.getRawButtonReleased(JoystickConstants.FinalRobotButtons.LOAD) && SecondaryController.getZ() < 0) {
 			mCurrentState = RobotState.LOADING_HATCH;
 		}
 		
@@ -392,9 +364,9 @@ public class Robot extends SampleRobot {
 	 * when either the robot or driver says it's done, go to HATCH_PRESCORE
 	 */
 	private void loadingHatch() {
-		mDriveTrain.enactMovement(0, 90, LinearVelocity.ANGLE_ONLY, 0, RotationalVelocity.NONE);
+		Drivetrain.enactMovement(0, 90, LinearVelocity.ANGLE_ONLY, 0, RotationalVelocity.NONE);
 		// either robot or person says the thing has been intaken
-		if (mIntake.intakePanel() || (mJoystick.getRawButtonReleased(JoystickConstants.FinalRobotButtons.HAS_LOADED) && mJoystick.getZ() < 0)){
+		if (mIntake.intakePanel() || (SecondaryController.getRawButtonReleased(JoystickConstants.FinalRobotButtons.HAS_LOADED) && SecondaryController.getZ() < 0)){
 			mCurrentState = RobotState.HATCH_PRESCORE;
 		}
 	}
@@ -404,12 +376,12 @@ public class Robot extends SampleRobot {
 	 */
 	private void hatchPrescore() {
 		// when the robot wants to score...
-		if (mIntake.holdingHatch() && mJoystick.getRawButtonReleased(JoystickConstants.FinalRobotButtons.SCORE) && mJoystick.getZ() < 0) {
+		if (mIntake.holdingHatch() && SecondaryController.getRawButtonReleased(JoystickConstants.FinalRobotButtons.SCORE) && SecondaryController.getZ() < 0) {
 			mCurrentState = RobotState.HATCH_SCORE;
 		}
 
 		// if we accidentally drop the panel...
-		else if (mIntake.holdingHatch() && mJoystick.getRawButtonReleased(JoystickConstants.FinalRobotButtons.LOAD)){
+		else if (mIntake.holdingHatch() && SecondaryController.getRawButtonReleased(JoystickConstants.FinalRobotButtons.LOAD)){
 			mCurrentState = RobotState.WAITING_TO_LOAD;
 		}
 	}
@@ -423,14 +395,14 @@ public class Robot extends SampleRobot {
 
 	private void ballFrontScore() {
 		// if robot or driver says scoring is done...
-		if (mIntake.scoreBallHigh() || mJoystick.getRawButtonReleased(JoystickConstants.FinalRobotButtons.HAS_SCORED)) {
+		if (mIntake.scoreBallHigh() || SecondaryController.getRawButtonReleased(JoystickConstants.FinalRobotButtons.HAS_SCORED)) {
 			mCurrentState = RobotState.WAITING_TO_LOAD;
 		}
 	}
 
 	private void ballBackScore() {
 		// if robot or driver says scoring is done...
-		if (mIntake.scoreBallLow() || mJoystick.getRawButtonReleased(JoystickConstants.FinalRobotButtons.HAS_SCORED)) {
+		if (mIntake.scoreBallLow() || SecondaryController.getRawButtonReleased(JoystickConstants.FinalRobotButtons.HAS_SCORED)) {
 			mCurrentState = RobotState.WAITING_TO_LOAD;
 		}
 	}
@@ -453,7 +425,7 @@ public class Robot extends SampleRobot {
 		while (this.isDisabled()) {
 			if (RunConstants.SECONDARY_JOYSTICK) {
 
-				if (mJoystick.getTriggerPressed()) {
+				if (SecondaryController.getTriggerPressed()) {
 					// rotate autonomous routines to select which one to start with:
 					if (mAutonomousRoutine == AutonomousRoutineType.DEFAULT) {
 						mAutonomousRoutine = AutonomousRoutineType.DO_NOTHING;
@@ -536,7 +508,7 @@ public class Robot extends SampleRobot {
 		}
 
 		mRobotAngle = new RobotAngle(mNavX, false, 0);
-		mDriveTrain = new DriveTrain(mWheel, mController, mRobotAngle);
+		Drivetrain = new DriveTrain(mWheel, PrimaryController, mRobotAngle);
 	}
 
 	private void hatchIntakeInit() {
@@ -545,7 +517,7 @@ public class Robot extends SampleRobot {
 		mHatchLinearPiston = new DoubleSolenoidReal(Ports.ActualRobot.HATCH_LINEAR_SOLENOID_IN,
 				Ports.ActualRobot.HATCH_LINEAR_SOLENOID_OUT);
 
-		mHatchIntake = new HatchIntake(mHatchRotaryPiston, mHatchLinearPiston, mJoystick);
+		mHatchIntake = new HatchIntake(mHatchRotaryPiston, mHatchLinearPiston, SecondaryController);
 	}
 
 	private void ballInit() {
@@ -562,7 +534,7 @@ public class Robot extends SampleRobot {
 		mBallHolder.config_IntegralZone(0, BallIntakeConstants.PID.HOLDER_IZONE, 10);
 		mBallHolder.configAllowableClosedloopError(0, BallIntakeConstants.PID.HOLDER_TOLERANCE, 10);
 
-		mBallIntake = new BallIntakeMotor(mBallHolder, mJoystick);
+		mBallIntake = new BallIntakeMotor(mBallHolder, SecondaryController);
 	}
 
 	private void leadscrewInit() {
@@ -584,12 +556,12 @@ public class Robot extends SampleRobot {
 		mHatchCamera = new Limelight();
 		mHatchCamera.setPipeline(1);
 
-		mLeadscrew = new Leadscrew(mLeadscrewTalon, mLeadscrewEncoder, mHatchCamera, mJoystick);
+		mLeadscrew = new Leadscrew(mLeadscrewTalon, mLeadscrewEncoder, mHatchCamera, SecondaryController);
 		
 	}
 
 	private void intakeInit() {
-		mIntake = new Intake(mHatchIntake, mLeadscrew, mHatchCamera, mJoystick);
+		mIntake = new Intake(mHatchIntake, mLeadscrew, mHatchCamera, SecondaryController);
 	}
 
 	private void climberInit(){
@@ -602,26 +574,21 @@ public class Robot extends SampleRobot {
 	// ******//
 	private void tankDrive() {
 		if (RunConstants.RUNNING_DRIVE) {
-			mDriveTrain.driveTank();
+			Drivetrain.driveTank();
 		}
 	}
 
 	private void crabDrive() {
 		if (RunConstants.RUNNING_DRIVE) {
-			mDriveTrain.driveCrab();
+			Drivetrain.driveCrab();
 		}
 	}
 
 	private void swerveDrive() {
 		if (RunConstants.RUNNING_DRIVE) {
-			mDriveTrain.driveSwerve();
+			Drivetrain.driveSwerve();
 		}
 	}
-
-	public DriveTrain getDriveTrain() {
-		return mDriveTrain;
-	}
-
 
 	// ********//
 	// LOGGING //
@@ -689,25 +656,25 @@ public class Robot extends SampleRobot {
 		// for now it is one frame per line
 		addLogValueInt(logString, (int) timeElapsed);
 
-		addLogValueBoolean(logString, mController.getYButton());
-		addLogValueBoolean(logString, mController.getBButton());
-		addLogValueBoolean(logString, mController.getAButton());
-		addLogValueBoolean(logString, mController.getXButton());
-		addLogValueBoolean(logString, mController.getBumper(Hand.kLeft));
-		addLogValueBoolean(logString, mController.getBumper(Hand.kRight));
-		addLogValueDouble(logString, mController.getTriggerAxis(Hand.kLeft));
-		addLogValueDouble(logString, mController.getTriggerAxis(Hand.kRight));
-		addLogValueInt(logString, mController.getPOV());
-		addLogValueBoolean(logString, mController.getStartButton());
-		addLogValueBoolean(logString, mController.getBackButton());
-		addLogValueDouble(logString, mController.getX(Hand.kLeft));
-		addLogValueDouble(logString, mController.getY(Hand.kLeft));
-		addLogValueDouble(logString, mController.getX(Hand.kRight));
-		addLogValueDouble(logString, mController.getY(Hand.kRight));
+		addLogValueBoolean(logString, PrimaryController.getYButton());
+		addLogValueBoolean(logString, PrimaryController.getBButton());
+		addLogValueBoolean(logString, PrimaryController.getAButton());
+		addLogValueBoolean(logString, PrimaryController.getXButton());
+		addLogValueBoolean(logString, PrimaryController.getBumper(Hand.kLeft));
+		addLogValueBoolean(logString, PrimaryController.getBumper(Hand.kRight));
+		addLogValueDouble(logString, PrimaryController.getTriggerAxis(Hand.kLeft));
+		addLogValueDouble(logString, PrimaryController.getTriggerAxis(Hand.kRight));
+		addLogValueInt(logString, PrimaryController.getPOV());
+		addLogValueBoolean(logString, PrimaryController.getStartButton());
+		addLogValueBoolean(logString, PrimaryController.getBackButton());
+		addLogValueDouble(logString, PrimaryController.getX(Hand.kLeft));
+		addLogValueDouble(logString, PrimaryController.getY(Hand.kLeft));
+		addLogValueDouble(logString, PrimaryController.getX(Hand.kRight));
+		addLogValueDouble(logString, PrimaryController.getY(Hand.kRight));
 
 		if (RunConstants.SECONDARY_JOYSTICK) {
 			for (int i = 1; i < 12; i++) {
-				addLogValueBoolean(logString, mJoystick.getRawButton(i));
+				addLogValueBoolean(logString, SecondaryController.getRawButton(i));
 			}
 		}
 
@@ -722,9 +689,9 @@ public class Robot extends SampleRobot {
 				addLogValueDouble(logString, mEncoder[i].getAngleDegrees());
 			}
 
-			addLogValueDouble(logString, mDriveTrain.getDesiredRobotVel().getMagnitude());
-			addLogValueDouble(logString, mDriveTrain.getDesiredRobotVel().getAngle());
-			addLogValueDouble(logString, mDriveTrain.getDesiredAngularVel());
+			addLogValueDouble(logString, Drivetrain.getDesiredRobotVel().getMagnitude());
+			addLogValueDouble(logString, Drivetrain.getDesiredRobotVel().getAngle());
+			addLogValueDouble(logString, Drivetrain.getDesiredAngularVel());
 		}
 
 		if (RunConstants.RUNNING_PNEUMATICS) {

@@ -12,57 +12,57 @@ import edu.wpi.first.wpilibj.Joystick;
 /**
  * Add your docs here.
  */
-public class LocalJoystick extends Joystick{
+public class CustomJoystick extends Joystick{
 
-    private int mProfiles = 3;
-    private int mCurrentProfile = 0;
+    public static final int Profiles = 3;
+    private int CurrentProfile = 0;
 
-    public LocalJoystick(int port){
+    public CustomJoystick(int port){
         super(port);
     }
 
-    public boolean getRawButtonReleased(int pButton) {
-        int realButton = pButton - mCurrentProfile * 10;
+    public boolean getRawButtonReleased(int button) {
+        int realButton = button - CurrentProfile * 10;
         if(realButton <= 1 || realButton > 11){
             return false;
         }
         return super.getRawButtonReleased(realButton);
     }
 
-    public boolean getRawButtonPressed(int pButton){
-        int realButton = pButton - mCurrentProfile * 10;
+    public boolean getRawButtonPressed(int button){
+        int realButton = button - CurrentProfile * 10;
         if(realButton <= 1 || realButton > 11){
             return false;
         }
         return super.getRawButtonPressed(realButton);
     }
 
-    public boolean getRawButton(int pButton){
-        int realButton = pButton - mCurrentProfile * 10;
+    public boolean getRawButton(int button){
+        int realButton = button - CurrentProfile * 10;
         if(realButton <= 1 || realButton > 11){
             return false;
         }
         return super.getRawButton(realButton);
     }
 
-    public double getX(int pProfile) {
-        if (pProfile != mCurrentProfile) {
+    public double getX(int profile) {
+        if (profile != CurrentProfile) {
             return 0;
         } else {
             return super.getX();
         }
     }
 
-    public double getY(int pProfile) {
-        if (pProfile != mCurrentProfile) {
+    public double getY(int profile) {
+        if (profile != CurrentProfile) {
             return 0;
         } else {
             return super.getY();
         }
     }
 
-    public double getZ(int pProfile){
-        if (pProfile != mCurrentProfile) {
+    public double getZ(int profile){
+        if (profile != CurrentProfile) {
             return 0;
         } else {
             return super.getZ();
@@ -71,12 +71,12 @@ public class LocalJoystick extends Joystick{
 
     public void updateProfile() {
         if (super.getRawButtonReleased(1)){
-            mCurrentProfile = (mCurrentProfile + 1) % mProfiles;
+            CurrentProfile = (CurrentProfile + 1) % Profiles;
         }
     }
 
     public int getProfile() {
-        return mCurrentProfile;
+        return CurrentProfile;
     }
 
 }

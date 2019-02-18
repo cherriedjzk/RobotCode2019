@@ -14,7 +14,7 @@ import constants.JoystickConstants;
 import constants.LeadscrewConstants;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import resource.ResourceFunctions;
-import robotcode.LocalJoystick;
+import robotcode.CustomJoystick;
 import robotcode.camera.Limelight;
 import sensors.LeadscrewEncoder;
 
@@ -26,7 +26,7 @@ public class Leadscrew {
     // **********//
 
     // joysticks used
-    private LocalJoystick mJoystick;
+    private CustomJoystick mJoystick;
 
     // leadscrew
     private WPI_TalonSRX mLeadscrew;
@@ -40,7 +40,7 @@ public class Leadscrew {
     // ***********//
     // INITIALIZE //
     // ***********//
-    public Leadscrew(WPI_TalonSRX pLeadscrew, LeadscrewEncoder pEncoder, Limelight pLimelight, LocalJoystick pJoystick) {
+    public Leadscrew(WPI_TalonSRX pLeadscrew, LeadscrewEncoder pEncoder, Limelight pLimelight, CustomJoystick pJoystick) {
         mLeadscrew = pLeadscrew;
         mEncoder = pEncoder;
         mHatchCamera = pLimelight;

@@ -11,7 +11,7 @@ import constants.IntakeConstants;
 import constants.JoystickConstants;
 import constants.LeadscrewConstants;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import robotcode.LocalJoystick;
+import robotcode.CustomJoystick;
 import robotcode.camera.Limelight;
 
 public class Intake {
@@ -23,7 +23,7 @@ public class Intake {
     private BallIntake mBallIntake;
     private Leadscrew mLeadscrew;
     private Limelight mLimelight;
-    private LocalJoystick mJoystick;
+    private CustomJoystick mJoystick;
 
     private IntakeState mIntakeState = IntakeState.IDLE;
 
@@ -31,7 +31,7 @@ public class Intake {
     // INITIALIZE //
     // ***********//
 
-    public Intake(HatchIntake pHatchIntake, Leadscrew pLeadscrew, Limelight pLimelight, LocalJoystick pJoystick) {
+    public Intake(HatchIntake pHatchIntake, Leadscrew pLeadscrew, Limelight pLimelight, CustomJoystick pJoystick) {
         mHatchIntake = pHatchIntake;
         mLeadscrew = pLeadscrew;
         mLimelight = pLimelight;

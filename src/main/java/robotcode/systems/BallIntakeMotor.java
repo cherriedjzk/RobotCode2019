@@ -12,20 +12,20 @@ import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
 
 import constants.BallIntakeConstants;
 import constants.JoystickConstants;
-import robotcode.LocalJoystick;
+import robotcode.CustomJoystick;
 import robotcode.pneumatics.DoubleSolenoidReal;
 
 
 public class BallIntakeMotor {
 
-    private LocalJoystick mJoystick;
+    private CustomJoystick mJoystick;
     
     private WPI_TalonSRX mBallHolder;
     private DoubleSolenoidReal mStopperPiston; 
     
     private BallIntakeState mBallIntakeState;
 
-    public BallIntakeMotor(WPI_TalonSRX pHolder, LocalJoystick pJoystick) {
+    public BallIntakeMotor(WPI_TalonSRX pHolder, CustomJoystick pJoystick) {
         mBallHolder = pHolder;
         mJoystick = pJoystick;
         mBallIntakeState = BallIntakeState.MANUAL;
